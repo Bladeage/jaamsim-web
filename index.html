@@ -55,6 +55,18 @@
     } catch (e) {
       status("Fehler: " + e);
       console.error(e);
+      // Details für die Fehlersuche sichtbar machen
+      const umgebung = {
+        browser: navigator.userAgent,
+        webassembly: typeof WebAssembly === "object",
+        crossOriginIsolated: self.crossOriginIsolated,
+        kerne: navigator.hardwareConcurrency,
+        speicher_gb: navigator.deviceMemory,
+      };
+      const k = document.getElementById("console");
+      k.style.display = "block";
+      k.textContent += "\n--- Fehler ---\n" + (e && e.stack ? e.stack : String(e)) +
+                       "\n\n--- Umgebung ---\n" + JSON.stringify(umgebung, null, 2);
     }
   </script>
 </body>
