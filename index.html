@@ -27,7 +27,7 @@
   <script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
   <script type="module">
     const status = (t) => { document.getElementById("status").textContent = t; console.log("[Probe]", t); };
-    const info = await (await fetch("build-info.json")).json();
+    const info = await (await fetch("build-info.json", { cache: "no-store" })).json();
     document.getElementById("version").textContent = info.release;
 
     // CheerpJ bindet die Wurzel des Webservers unter /app/ ein; GitHub Pages liegt unter /<repo>/
@@ -41,7 +41,7 @@
         document.getElementById("display").style.display = "none";
         document.getElementById("console").style.display = "block";
         // Modell liegt als Datei neben der Seite; /str/ ist für Java lesbar
-        const cfg = await (await fetch("beispiel/warteschlange.cfg")).text();
+        const cfg = await (await fetch("beispiel/warteschlange.cfg", { cache: "no-store" })).text();
         cheerpOSAddStringFile("/str/warteschlange.cfg", cfg);
         status("Rechenlauf läuft: JaamSim -h -b warteschlange.cfg (Ausgabe unten)");
         const code = await cheerpjRunMain("com.jaamsim.ui.GUIFrame", jar, "-h", "-b", "/str/warteschlange.cfg");
