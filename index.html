@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JaamSim im Browser – Probe</title>
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #1e1e1e; color: #ddd; }
+    header { padding: 6px 12px; background: #2d2d2d; display: flex; gap: 16px; align-items: center; font-size: 14px; }
+    header a { color: #8cf; }
+    #status { flex: 1; }
+    #display { position: absolute; top: 34px; left: 0; right: 0; bottom: 0; }
+    #console { position: absolute; top: 34px; left: 0; right: 0; bottom: 0; margin: 0; padding: 12px;
+               overflow: auto; white-space: pre-wrap; font: 13px/1.4 monospace; display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>JaamSim <span id="version">…</span></strong>
+    <span id="status">Lade Java-Laufzeit (CheerpJ) …</span>
+    <a href="?">Oberfläche</a>
+    <a href="?mode=headless">Rechenlauf ohne Grafik</a>
+  </header>
+  <div id="display"></div>
+  <pre id="console"></pre>
+
+  <script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
+  <script type="module">
+    const status = (t) => { document.getElementById("status").textContent = t; console.log("[Probe]", t); };
+    const info = await (await fetch("build-info.json")).json();
+    document.getElementById("version").textContent = info.release;
+
+    // CheerpJ bindet die Wurzel des Webservers unter /app/ ein; GitHub Pages liegt unter /<repo>/
+    const base = "/app" + location.pathname.replace(/[^/]*$/, "");
+    const jar = base + info.jar;
+    const headless = new URLSearchParams(location.search).get("mode") === "headless";
+
+    try {
+      await cheerpjInit({ version: 17 });
+      if (headless) {
+        document.getElementById("display").style.display = "none";
+        document.getElementById("console").style.display = "block";
+        // Modell liegt als Datei neben der Seite; /str/ ist für Java lesbar
+        const cfg = await (await fetch("beispiel/warteschlange.cfg")).text();
+        cheerpOSAddStringFile("/str/warteschlange.cfg", cfg);
+        status("Rechenlauf läuft: JaamSim -h -b warteschlange.cfg (Ausgabe unten)");
+        const code = await cheerpjRunMain("com.jaamsim.ui.GUIFrame", jar, "-h", "-b", "/str/warteschlange.cfg");
+        status("Rechenlauf beendet, Exit-Code " + code);
+      } else {
+        cheerpjCreateDisplay(-1, -1, document.getElementById("display"));
+        status("Starte " + info.jar + " …");
+        const code = await cheerpjRunJar(jar);
+        status("JaamSim beendet, Exit-Code " + code);
+      }
+    } catch (e) {
+      status("Fehler: " + e);
+      console.error(e);
+    }
+  </script>
+</body>
+</html>

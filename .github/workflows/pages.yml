@@ -1,0 +1,52 @@
+name: JaamSim-Release holen und Seite veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JaamSim-Release laden (Version aus jaamsim-version.txt)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          wunsch=$(tr -d '[:space:]' < jaamsim-version.txt)
+          if [ "$wunsch" = "latest" ]; then pfad=releases/latest; else pfad=releases/tags/$wunsch; fi
+          gh api repos/jaamsim/jaamsim/$pfad > release.json
+          tag=$(jq -r .tag_name release.json)
+          # die volle .jar (mit JOGL), nicht die -bare-Variante
+          name=$(jq -r '[.assets[].name | select(endswith(".jar") and (contains("-bare") | not))][0]' release.json)
+          test "$name" != "null"
+          mkdir -p _site
+          gh release download "$tag" -R jaamsim/jaamsim -p "$name" -D _site
+          cp -r index.html beispiel LICENSE-JaamSim.txt _site/
+          jq -n --arg r "$tag" --arg j "$name" --arg t "$(date -u +%FT%TZ)" \
+            '{release: $r, jar: $j, gebaut: $t}' > _site/build-info.json
+          cat _site/build-info.json
+          echo "### JaamSim $tag ($name)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@v3
+
+  veroeffentlichen:
+    needs: bauen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
