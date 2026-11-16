@@ -46,6 +46,13 @@
         status("Rechenlauf läuft: JaamSim -h -b warteschlange.cfg (Ausgabe unten)");
         const code = await cheerpjRunMain("com.jaamsim.ui.GUIFrame", jar, "-h", "-b", "/str/warteschlange.cfg");
         status("Rechenlauf beendet, Exit-Code " + code);
+        // Bericht liegt im beschreibbaren Bereich /files/ (siehe ReportDirectory im Modell)
+        try {
+          const rep = await (await cjFileBlob("/files/warteschlange.rep")).text();
+          document.getElementById("console").textContent += "\n--- Bericht warteschlange.rep ---\n" + rep;
+        } catch (e) {
+          document.getElementById("console").textContent += "\n(Kein Bericht gefunden: " + e + ")";
+        }
       } else {
         cheerpjCreateDisplay(-1, -1, document.getElementById("display"));
         status("Starte " + info.jar + " …");
